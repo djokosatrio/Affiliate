@@ -1,28 +1,30 @@
 import { prisma } from "@/src/lib/prisma";
-import { APP_CONFIG } from "@/src/lib/config";
 import ProductCard from "@/src/components/ProductCard";
-import FilterSection from "@/src/components/FilterSection";
 
-type SearchParams = {
-  q?: string;
-  cat?: string;
-  sort?: string;
+// Definisi tipe untuk parameter pencarian dari URL
+type SearchParams = { 
+  q?: string; 
+  cat?: string; 
+  sort?: string; 
 };
 
-export default async function HomePage(props: {
-  searchParams: Promise<SearchParams>;
+export default async function HomePage(props: { 
+  searchParams: Promise<SearchParams>; 
 }) {
+  // Tunggu data params dari URL (Next.js 15+ style)
   const params = await props.searchParams;
-
+  
   const query = params.q || "";
   const category = params.cat || "All";
   const sort: "asc" | "desc" = params.sort === "desc" ? "desc" : "asc";
 
-  // ambil data produk
+  // LOGIKA AMBIL DATA: Mengambil data berdasarkan filter yang dikirim dari Layout
   const products = await prisma.product.findMany({
     where: {
       AND: [
+        // Filter Kategori (Jika bukan 'All')
         category !== "All" ? { category } : {},
+        // Filter Pencarian (Cek Judul dan Deskripsi)
         {
           OR: [
             { title: { contains: query, mode: "insensitive" } },
@@ -31,54 +33,51 @@ export default async function HomePage(props: {
         },
       ],
     },
-    orderBy: {
-      price: sort,
+    orderBy: { 
+      price: sort 
     },
   });
 
-  // infer type dari hasil query (RECOMMENDED)
-  type Product = typeof products[number];
-
-  // ambil kategori (typed explicit ringan)
-  const categoriesRaw: { category: string }[] =
-    await prisma.product.findMany({
-      select: { category: true },
-      distinct: ["category"],
-    });
-
-  const categories: string[] = [
-    "All",
-    ...categoriesRaw.map((c) => c.category),
-  ];
-
   return (
-    <main className="min-h-screen bg-[#0a0a0c] text-white p-8">
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-12 flex flex-col md:flex-row justify-between items-end gap-6">
-          <div>
-            <h1 className="text-5xl font-black bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-              {APP_CONFIG.APP_NAME}
-            </h1>
-            <p className="text-gray-400 mt-2">
-              Rekomendasi Produk Pilihan Netizen Indonesia 🇮🇩
-            </p>
-          </div>
-
-          <FilterSection categories={categories} />
-        </header>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {products.map((p: Product) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
+    <div className="max-w-7xl mx-auto px-6 py-12">
+      
+      {/* STATUS BAR: Menampilkan info apa yang sedang dilihat user */}
+      <div className="mb-10 flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-1.5 bg-gradient-to-b from-blue-400 to-purple-600 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+          <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">
+            {query ? `Hasil: "${query}"` : category === "All" ? "Katalog Terbaru" : category}
+          </h2>
         </div>
-
-        {products.length === 0 && (
-          <div className="text-center py-20 text-gray-500 italic">
-            Belum ada produk untuk ditampilkan.
-          </div>
-        )}
+        <p className="text-gray-500 text-xs font-bold tracking-[0.2em] uppercase ml-5">
+          Ditemukan {products.length} Barang Pilihan
+        </p>
       </div>
-    </main>
+
+      {/* GRID PRODUK: Menampilkan kartu produk */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+        {products.map((p) => (
+          <ProductCard key={p.id} product={p} />
+        ))}
+      </div>
+
+      {/* TAMPILAN JIKA DATA KOSONG */}
+      {products.length === 0 && (
+        <div className="text-center py-40 border-2 border-dashed border-white/5 rounded-[40px] mt-10 bg-[#111111]/30">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/5 mb-6">
+            <svg className="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <p className="text-gray-500 text-lg font-medium italic">
+            "Yah, barangnya nggak ada di gudang Kere Hore..."
+          </p>
+          <p className="text-gray-700 text-sm mt-2 font-bold uppercase tracking-widest">
+            Coba cari kata kunci lain
+          </p>
+        </div>
+      )}
+      
+    </div>
   );
 }
