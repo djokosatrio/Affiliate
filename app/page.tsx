@@ -3,7 +3,7 @@ import { APP_CONFIG } from "@/src/lib/config";
 import ProductCard from "@/src/components/ProductCard";
 import FilterSection from "@/src/components/FilterSection";
 
-// 1. Pastikan fungsi diawali dengan 'export default async function'
+// 1. Pastikan fungsi diawali dengan 'export default async function' a
 // 2. Pastikan ada kurung kurawal buka '{' di akhir baris ini
 export default async function HomePage(props: {
   searchParams: Promise<{ q?: string; cat?: string; sort?: string }>;
@@ -35,8 +35,7 @@ export default async function HomePage(props: {
     select: { category: true },
     distinct: ["category"],
   });
-  const categories = ["All", ...categoriesRaw.map((c) => c.category)];
-
+const categories = ["All", ...categoriesRaw.map((c: { category: string }) => c.category)];
   // Pastikan RETURN berada di dalam fungsi
   return (
     <main className="min-h-screen bg-[#0a0a0c] text-white p-8">
