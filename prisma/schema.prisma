@@ -1,0 +1,21 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url dihapus dari sini!
+}
+
+model product {
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String   @db.Text
+  price        Float
+  images       String[]
+  affiliateUrl String
+  category     String
+  createdAt    DateTime @default(now())
+  @@map("products") // <--- INI KUNCINYA: Memetakan model ke tabel 'products' di DB
+}
