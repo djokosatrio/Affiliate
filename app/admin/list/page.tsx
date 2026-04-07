@@ -1,7 +1,8 @@
-export const dynamic = "force-dynamic"; // Tambahkan ini agar lolos build Vercel
+export const dynamic = "force-dynamic";
 
 import { prisma } from "@/src/lib/prisma";
 import ProductCard from "@/src/components/ProductCard";
+import { Suspense } from "react";
 
 type SearchParams = { 
   q?: string; 
@@ -9,17 +10,27 @@ type SearchParams = {
   sort?: string; 
 };
 
+// Komponen Utama
 export default async function HomePage(props: { 
   searchParams: Promise<SearchParams>; 
 }) {
-  // Await params karena di Next.js 15 ini adalah Promise
-  const params = await props.searchParams;
+  return (
+    <div className="max-w-7xl mx-auto px-6 py-12">
+      <Suspense fallback={<div className="text-center py-20 text-gray-500 font-black uppercase tracking-widest animate-pulse">Menyiapkan Katalog...</div>}>
+        <ProductGrid searchParams={props.searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+// Komponen Grid Produk (Logika Async dipisah agar lebih aman saat Build)
+async function ProductGrid({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const params = await searchParams;
   
   const query = params?.q || "";
   const category = params?.cat || "All";
   const sort: "asc" | "desc" = params?.sort === "desc" ? "desc" : "asc";
 
-  // Ambil data produk dengan filter
   const products = await prisma.product.findMany({
     where: {
       AND: [
@@ -38,8 +49,7 @@ export default async function HomePage(props: {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
-      
+    <>
       {/* Status Bar */}
       <div className="mb-10 flex flex-col gap-3">
         <div className="flex items-center gap-3">
@@ -53,14 +63,13 @@ export default async function HomePage(props: {
         </p>
       </div>
 
-      {/* Grid Produk */}
+      {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
         {products.map((p) => (
           <ProductCard key={p.id} product={p} />
         ))}
       </div>
 
-      {/* Jika Kosong */}
       {products.length === 0 && (
         <div className="text-center py-40 border-2 border-dashed border-white/5 rounded-[40px] mt-10 bg-[#111111]/30">
           <p className="text-gray-500 text-lg font-medium italic">
@@ -68,7 +77,6 @@ export default async function HomePage(props: {
           </p>
         </div>
       )}
-      
-    </div>
+    </>
   );
 }
