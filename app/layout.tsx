@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import React from 'react';
+import React, { Suspense } from 'react'; // 1. Tambahkan Suspense di sini
 import Image from 'next/image';
 import FilterSection from "@/src/components/FilterSection";
 import { prisma } from "@/src/lib/prisma";
@@ -30,23 +30,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <header className="sticky top-0 z-50 w-full bg-[#111111]/95 backdrop-blur-md border-b border-white/10 shadow-2xl">
           <div className="max-w-7xl mx-auto px-6 h-28 flex items-center justify-between gap-8">
             
-            {/* 1. LOGO & NAMA BRAND (BULAT SEMPURNA & ANTI KEPOTONG) */}
+            {/* 1. LOGO & NAMA BRAND */}
             <div className="flex items-center gap-6 shrink-0 cursor-pointer group">
-              
-              {/* CONTAINER LOGO: Paksa bulat sempurna dengan CSS */}
+              {/* CONTAINER LOGO */}
               <div className="relative w-20 h-20 rounded-full overflow-hidden transition-transform duration-300 group-hover:scale-110">
                 <Image 
                   src="/logo.png" 
                   alt="Logo Kere Hore" 
                   fill 
-                  className="object-cover" // Mengisi penuh lingkaran
+                  className="object-cover"
                   priority 
                 />
               </div>
               
-              {/* Kontainer Teks Brand dengan Gradasi Biru-Ungu */}
+              {/* Kontainer Teks Brand */}
               <div className="flex flex-col py-2"> 
-                {/* leading-[1.4] + padding top memastikan teks gradasi tidak terpotong plafon */}
                 <h1 className="text-3xl md:text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-400 bg-clip-text text-transparent tracking-tighter leading-[1.4] pt-1 px-1 -mb-2">
                   KERE HORE
                 </h1>
@@ -56,12 +54,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </div>
             </div>
 
-            {/* 2. FILTER SECTION (TENGAH & PANJANG) */}
+            {/* 2. FILTER SECTION (DIBUNGKUS SUSPENSE AGAR BUILD AMAN) */}
             <div className="flex-1 flex justify-center max-w-4xl">
-              <FilterSection categories={categories} />
+              {/* Kunci Perbaikan: FilterSection biasanya menggunakan useSearchParams(). 
+                  Di Next.js 15/16, komponen ini WAJIB di dalam Suspense boundary 
+                  agar tidak merusak proses prerendering halaman admin.
+              */}
+              <Suspense fallback={
+                <div className="w-full max-w-md h-12 bg-white/5 animate-pulse rounded-2xl border border-white/10" />
+              }>
+                <FilterSection categories={categories} />
+              </Suspense>
             </div>
 
             {/* Sisi kanan kosong agar layout tetap bersih & simetris */}
+            <div className="w-20 hidden md:block"></div>
           </div>
         </header>
 
