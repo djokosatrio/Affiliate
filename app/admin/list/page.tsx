@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic"; // Import dynamic
+import dynamic from "next/dynamic"; // 1. Wajib import ini
 import { getAllProducts, deleteProduct } from "../actions";
 
-// 1. KITA PISAHKAN LOGIKA TABEL KE KOMPONEN INTERNAL
+// 2. PINDAHKAN LOGIKA TABEL KE KOMPONEN INTERNAL
 function AdminListTable() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +37,7 @@ function AdminListTable() {
   if (loading) return (
     <div className="py-40 text-center">
       <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-      <p className="text-gray-500 font-black uppercase tracking-widest text-[10px]">Membuka Brankas...</p>
+      <p className="text-gray-500 font-black uppercase tracking-widest text-[10px]">Membuka Database...</p>
     </div>
   );
 
@@ -53,7 +53,7 @@ function AdminListTable() {
         <tbody className="divide-y divide-white/5">
           {products.map((p) => (
             <tr key={p.id} className="hover:bg-white/[0.01] transition-all group">
-              <td className="p-7 font-bold text-white uppercase italic text-lg text-left">{p.title}</td>
+              <td className="p-7 font-bold text-white group-hover:text-blue-400 transition-colors uppercase italic text-lg text-left">{p.title}</td>
               <td className="p-7 text-right">
                 <div className="flex justify-end gap-3">
                   <Link href={`/admin/edit/${p.id}`} className="px-5 py-2.5 bg-white/5 hover:bg-blue-600 text-[10px] font-black text-gray-400 hover:text-white rounded-xl uppercase transition-all border border-white/5 italic">
@@ -73,12 +73,12 @@ function AdminListTable() {
   );
 }
 
-// 2. GUNAKAN DYNAMIC IMPORT DENGAN SSR: FALSE (INI KUNCINYA!)
+// 3. GUNAKAN DYNAMIC IMPORT DENGAN SSR: FALSE (INI OBATNYA!)
 const DynamicAdminTable = dynamic(() => Promise.resolve(AdminListTable), {
   ssr: false, // Memaksa Next.js mengabaikan komponen ini saat proses Prerender Build
 });
 
-// 3. HALAMAN UTAMA (Wajib Export Default)
+// 4. HALAMAN UTAMA (Wajib Export Default)
 export default function AdminListPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-white py-12 px-6">
