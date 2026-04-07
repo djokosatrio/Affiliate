@@ -1,82 +1,117 @@
-export const dynamic = "force-dynamic";
+"use client";
 
-import { prisma } from "@/src/lib/prisma";
-import ProductCard from "@/src/components/ProductCard";
-import { Suspense } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { getAllProducts, deleteProduct } from "../actions"; // Pastikan buat fungsi ini di actions.ts
 
-type SearchParams = { 
-  q?: string; 
-  cat?: string; 
-  sort?: string; 
-};
+export default function AdminListPage() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-// Komponen Utama
-export default async function HomePage(props: { 
-  searchParams: Promise<SearchParams>; 
-}) {
+  // 1. Fungsi Ambil Data (Memanggil Server Action)
+  async function loadData() {
+    setLoading(true);
+    try {
+      const data = await getAllProducts(); // Fungsi ini ambil data dari Prisma di server
+      setProducts(data);
+    } catch (error) {
+      console.error("Gagal ambil data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // 2. Fungsi Hapus
+  const handleDelete = async (id: string, title: string) => {
+    if (confirm(`Hapus "${title}" dari katalog?`)) {
+      try {
+        const res = await deleteProduct(id);
+        if (res.success) {
+          setProducts(products.filter((p) => p.id !== id));
+          alert("Barang sudah musnah! ✅");
+        }
+      } catch (error) {
+        alert("Gagal hapus barang!");
+      }
+    }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
-      <Suspense fallback={<div className="text-center py-20 text-gray-500 font-black uppercase tracking-widest animate-pulse">Menyiapkan Katalog...</div>}>
-        <ProductGrid searchParams={props.searchParams} />
-      </Suspense>
+    <div className="min-h-screen bg-[#0a0a0c] text-white py-12 px-6">
+      <div className="max-w-6xl mx-auto">
+        
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-1.5 bg-blue-600 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.5)]"></div>
+            <h1 className="text-4xl font-black italic tracking-tighter uppercase">
+              Gudang <span className="text-blue-500">Produk</span>
+            </h1>
+          </div>
+          <Link 
+            href="/admin/add" 
+            className="bg-white text-black font-black px-8 py-4 rounded-2xl hover:bg-blue-500 hover:text-white transition-all uppercase tracking-tighter italic"
+          >
+            + Tambah Barang
+          </Link>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-40">
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+            <p className="text-gray-500 font-black uppercase tracking-widest text-[10px]">Membongkar Brankas...</p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-[35px] border border-white/5 bg-[#111113] shadow-2xl">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-white/5 bg-white/[0.02]">
+                  <th className="p-7 text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">Produk</th>
+                  <th className="p-7 text-[10px] font-black uppercase tracking-[0.4em] text-gray-500">Kategori</th>
+                  <th className="p-7 text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {products.map((p) => (
+                  <tr key={p.id} className="hover:bg-white/[0.01] transition-all group">
+                    <td className="p-7 font-bold text-white group-hover:text-blue-400 transition-colors uppercase tracking-tight italic text-lg">
+                      {p.title}
+                    </td>
+                    <td className="p-7">
+                      <span className="px-4 py-1.5 bg-blue-600/10 text-blue-500 text-[10px] font-black rounded-xl border border-blue-500/20 uppercase">
+                        {p.category}
+                      </span>
+                    </td>
+                    <td className="p-7 text-right">
+                      <div className="flex justify-end gap-3">
+                        <Link 
+                          href={`/admin/edit/${p.id}`} 
+                          className="px-5 py-2.5 bg-white/5 hover:bg-blue-600 text-[10px] font-black text-gray-400 hover:text-white rounded-xl uppercase transition-all border border-white/5 italic"
+                        >
+                          Edit
+                        </Link>
+                        <button 
+                          onClick={() => handleDelete(p.id, p.title)}
+                          className="px-5 py-2.5 bg-red-600/5 hover:bg-red-600 text-[10px] font-black text-red-900 hover:text-white rounded-xl uppercase transition-all border border-red-900/20 italic"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {products.length === 0 && (
+              <div className="text-center py-20 text-gray-600 font-black uppercase text-xs tracking-widest italic">Etalase Kosong!</div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
-  );
-}
-
-// Komponen Grid Produk (Logika Async dipisah agar lebih aman saat Build)
-async function ProductGrid({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  const params = await searchParams;
-  
-  const query = params?.q || "";
-  const category = params?.cat || "All";
-  const sort: "asc" | "desc" = params?.sort === "desc" ? "desc" : "asc";
-
-  const products = await prisma.product.findMany({
-    where: {
-      AND: [
-        category !== "All" ? { category } : {},
-        {
-          OR: [
-            { title: { contains: query, mode: "insensitive" } },
-            { description: { contains: query, mode: "insensitive" } },
-          ],
-        },
-      ],
-    },
-    orderBy: { 
-      price: sort 
-    },
-  });
-
-  return (
-    <>
-      {/* Status Bar */}
-      <div className="mb-10 flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-1.5 bg-gradient-to-b from-blue-400 to-purple-600 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>
-          <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">
-            {query ? `Hasil: "${query}"` : category === "All" ? "Katalog Terbaru" : category}
-          </h2>
-        </div>
-        <p className="text-gray-500 text-[10px] font-bold tracking-[0.3em] uppercase ml-5">
-          Ditemukan {products.length} Barang Pilihan <span className="text-blue-500">Kere Hore</span>
-        </p>
-      </div>
-
-      {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-        {products.map((p) => (
-          <ProductCard key={p.id} product={p} />
-        ))}
-      </div>
-
-      {products.length === 0 && (
-        <div className="text-center py-40 border-2 border-dashed border-white/5 rounded-[40px] mt-10 bg-[#111111]/30">
-          <p className="text-gray-500 text-lg font-medium italic">
-            "Yah, barangnya nggak ada di gudang Kere Hore..."
-          </p>
-        </div>
-      )}
-    </>
   );
 }
