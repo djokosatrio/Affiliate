@@ -4,6 +4,7 @@ import { prisma } from "@/src/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 // 1. SIMPAN PRODUK BARU (Create)
+// Data images sekarang diterima sebagai array string (kumpulan URL)
 export async function saveProduct(data: any) {
   try {
     await prisma.product.create({
@@ -12,17 +13,18 @@ export async function saveProduct(data: any) {
         description: data.description,
         price: data.price,
         category: data.category,
-        images: data.images, // Array URL dari Supabase
+        images: data.images, // Array URL langsung disimpan ke kolom images
         affiliateUrl: data.url,
       },
     });
 
+    // Refresh data di halaman-halaman terkait
     revalidatePath("/"); 
     revalidatePath("/admin/list");
     return { success: true };
   } catch (error) {
     console.error("Save Error:", error);
-    return { success: false };
+    return { success: false, message: "Gagal simpan ke database" };
   }
 }
 
@@ -42,7 +44,7 @@ export async function getAllProducts() {
 export async function getProductById(id: string) {
   try {
     return await prisma.product.findUnique({
-      where: { id: Number(id) }, // Konversi ke Number karena ID pake Int
+      where: { id: Number(id) },
     });
   } catch (error) {
     console.error("GetById Error:", error);
@@ -54,13 +56,13 @@ export async function getProductById(id: string) {
 export async function updateProduct(id: string, data: any) {
   try {
     await prisma.product.update({
-      where: { id: Number(id) }, // Konversi ke Number karena ID pake Int
+      where: { id: Number(id) },
       data: {
         title: data.title,
         description: data.description,
         price: data.price,
         category: data.category,
-        images: data.images,
+        images: data.images, // Update dengan array URL baru
         affiliateUrl: data.url,
       },
     });
@@ -71,21 +73,25 @@ export async function updateProduct(id: string, data: any) {
     return { success: true };
   } catch (error) {
     console.error("Update Error:", error);
-    return { success: false };
+    return { success: false, message: "Gagal update data" };
   }
 }
 
 // 5. HAPUS PRODUK (Delete)
 export async function deleteProduct(id: string) {
   try {
+    // Karena sekarang pakai link gambar (hotlinking),
+    // kita tidak perlu lagi menghapus file di Supabase Storage.
+    // Cukup hapus record di Prisma/Database saja.
     await prisma.product.delete({
-      where: { id: Number(id) } // Konversi ke Number karena ID pake Int
+      where: { id: Number(id) }
     });
+
     revalidatePath("/");
     revalidatePath("/admin/list");
     return { success: true };
   } catch (error) {
     console.error("Delete Error:", error);
-    return { success: false };
+    return { success: false, message: "Gagal menghapus data" };
   }
 }

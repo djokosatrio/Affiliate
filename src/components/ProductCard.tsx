@@ -9,6 +9,17 @@ export default function ProductCard({ product }: { product: any }) {
   const [showModal, setShowModal] = useState(false);
   const [zoomIndex, setZoomIndex] = useState(0);
 
+  // --- FUNGSI TRACKING KLIK ---
+  const handleAffiliateClick = async (e: React.MouseEvent) => {
+    // Kita tidak pakai preventDefault supaya window.open tetap lancar
+    // Jalankan fetch di background tanpa mengganggu user
+    fetch(`/api/clicks/${product.id}`, { 
+      method: "POST",
+      // Keepalive memastikan request tetap jalan meskipun tab ditutup/pindah
+      keepalive: true 
+    }).catch(err => console.error("Tracking Error:", err));
+  };
+
   const openZoom = (img: string) => {
     const index = product.images.indexOf(img);
     setZoomIndex(index !== -1 ? index : 0);
@@ -74,20 +85,17 @@ export default function ProductCard({ product }: { product: any }) {
             </span>
           </div>
 
-          {/* Judul: Tetap bisa diklik ke detail */}
           <Link href={`/product/${product.id}`}>
             <h3 className="text-lg font-bold text-white hover:text-blue-400 transition-colors uppercase tracking-tight leading-tight min-h-[3rem]">
               {product.title}
             </h3>
           </Link>
           
-          {/* Deskripsi: TIDAK BISA DIKLIK & TIDAK DIPOTONG (Line-clamp dibuang) */}
-          {/* Kita kasih min-h supaya di beranda tetap sejajar */}
           <div className="text-gray-400 text-sm mt-4 leading-relaxed whitespace-pre-line min-h-[5rem]">
             {product.description}
           </div>
 
-          {/* === 4. HARGA & TOMBOL (DIPAKSA DI PALING BAWAH) === */}
+          {/* === 4. HARGA & TOMBOL === */}
           <div className="mt-auto pt-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex flex-col">
@@ -98,9 +106,11 @@ export default function ProductCard({ product }: { product: any }) {
               </div>
             </div>
             
+            {/* LINK DENGAN FUNGSI TRACKING ONCLICK */}
             <a 
               href={product.affiliateUrl} 
               target="_blank" 
+              onClick={handleAffiliateClick} // <-- Panggil fungsi tracking di sini
               className="block w-full text-center bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-600/20 active:scale-95"
             >
               GAS BELI SEKARANG 🛒

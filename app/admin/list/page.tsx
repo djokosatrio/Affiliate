@@ -24,12 +24,7 @@ export default function AdminListPage() {
               Gudang <span className="text-blue-500">Produk</span>
             </h1>
           </div>
-          <Link 
-            href="/admin/add" 
-            className="bg-white text-black font-black px-8 py-4 rounded-2xl hover:bg-blue-500 hover:text-white transition-all uppercase tracking-tighter italic text-center"
-          >
-            + Tambah Barang
-          </Link>
+          
         </div>
 
         {/* 2. BUNGKUS DENGAN SUSPENSE TINGKAT TINGGI */}
