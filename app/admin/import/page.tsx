@@ -42,7 +42,7 @@ export default function ImportPage() {
               title: row["Item Name"] || "Produk Tanpa Nama",
               description: `Toko: ${row["Shop Name"] || "-"} | Penjualan: ${row["Sales"] || "0"}`,
               price: cleanPrice || 0,
-              category: "Shopee Import",
+              category: "Shopee",
               url: row["Offer Link"] || row["Product Link"] || "",
               images: [], // CSV Shopee tidak sedia gambar, nanti edit manual
             });
