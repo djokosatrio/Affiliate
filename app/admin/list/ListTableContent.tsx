@@ -7,29 +7,46 @@ import { supabase } from "@/src/lib/supabase";
 
 export default function ListTableContent() {
   const [products, setProducts] = useState<any[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]); // Untuk Fitur Search
+  const [searchTerm, setSearchTerm] = useState(""); // State Search
   const [loading, setLoading] = useState(true);
   const [addingImageId, setAddingImageId] = useState<number | null>(null);
   const [quickLink, setQuickLink] = useState("");
 
   useEffect(() => { loadData(); }, []);
 
+  // Logika Filter Search
+  useEffect(() => {
+    const filtered = products.filter(p => 
+      p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      p.id.toString().includes(searchTerm)
+    );
+    setFilteredProducts(filtered);
+  }, [searchTerm, products]);
+
   async function loadData() {
     setLoading(true);
     try {
       const data = await getAllProducts();
-      // SORTIR: 1. No Foto, 2. Klik terbanyak
       const sorted = (data || []).sort((a, b) => {
         if ((a.images?.length || 0) === 0) return -1;
         if ((b.images?.length || 0) === 0) return 1;
         return (b.clicks || 0) - (a.clicks || 0);
       });
       setProducts(sorted);
+      setFilteredProducts(sorted);
     } catch (err) {
       console.error("Gagal ambil data:", err);
     } finally {
       setLoading(false);
     }
   }
+
+  const handleCopyLink = (id: number) => {
+    const link = `https://www.kerehore.online/?autoId=${id}`;
+    navigator.clipboard.writeText(link);
+    alert("Link disalin: " + link);
+  };
 
   const handleQuickAdd = async (product: any) => {
     if (!quickLink.trim()) return;
@@ -56,33 +73,46 @@ export default function ListTableContent() {
   if (loading) return <div className="py-20 text-center text-blue-500 font-black italic animate-pulse uppercase tracking-[0.4em]">Loading Database...</div>;
 
   return (
-    <div className="max-w-7xl mx-auto py-6 font-sans">
+    <div className="max-w-7xl mx-auto py-6 font-sans px-4">
       
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 bg-[#121418] p-6 rounded-[2.5rem] border border-white/5 shadow-2xl gap-4">
-        <div className="ml-4">
-          <h2 className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] italic leading-none">Inventory Analytics</h2>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-[8px] font-bold text-blue-500 uppercase tracking-widest italic">{products.length} Items Total</span>
+      {/* HEADER & SEARCH */}
+      <div className="flex flex-col gap-6 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-center bg-[#121418] p-6 rounded-[2.5rem] border border-white/5 shadow-2xl gap-4">
+          <div className="ml-4">
+            <h2 className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] italic leading-none">Inventory Analytics</h2>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="text-[8px] font-bold text-blue-500 uppercase tracking-widest italic">{products.length} Items Total</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Link href="/admin/add" className="bg-blue-600 hover:bg-blue-500 text-white px-7 py-3.5 rounded-2xl font-black italic text-[10px] uppercase transition-all shadow-lg shadow-blue-900/20">
+              + ADD PRODUCT
+            </Link>
+            <Link href="/admin/import" className="bg-white/5 hover:bg-white/10 text-white px-7 py-3.5 rounded-2xl font-black italic text-[10px] uppercase transition-all border border-white/10 flex items-center gap-2">
+              <span>📦</span> IMPORT CSV
+            </Link>
           </div>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <Link href="/admin/add" className="bg-blue-600 hover:bg-blue-500 text-white px-7 py-3.5 rounded-2xl font-black italic text-[10px] uppercase transition-all shadow-lg shadow-blue-900/20">
-            + ADD PRODUCT
-          </Link>
-          <Link href="/admin/import" className="bg-white/5 hover:bg-white/10 text-white px-7 py-3.5 rounded-2xl font-black italic text-[10px] uppercase transition-all border border-white/10 flex items-center gap-2">
-            <span>📦</span> IMPORT CSV
-          </Link>
+
+        {/* SEARCH BAR ADMIN */}
+        <div className="relative group">
+          <input 
+            type="text" 
+            placeholder="Cari nama produk atau ID..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-[#111113] border border-white/5 rounded-2xl py-4 px-6 text-sm text-white outline-none focus:border-blue-500/50 transition-all shadow-xl"
+          />
+          <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-600 uppercase tracking-widest">Search Mode</span>
         </div>
       </div>
 
       <div className="overflow-hidden rounded-[2.5rem] border border-white/5 bg-[#111113] shadow-2xl">
-        <div className="overflow-x-auto"> {/* Tambah scroll horizontal untuk layar kecil */}
+        <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-white/5 bg-white/[0.02]">
-                {/* KOLOM ID BARU */}
                 <th className="p-7 text-[10px] font-black uppercase text-gray-600 italic tracking-widest text-center px-6">ID</th>
                 <th className="p-7 text-[10px] font-black uppercase text-gray-600 italic tracking-widest px-10">Product Details</th>
                 <th className="p-7 text-[10px] font-black uppercase text-gray-600 italic tracking-widest text-center">Status</th>
@@ -91,26 +121,34 @@ export default function ListTableContent() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {products.map((p) => {
+              {filteredProducts.map((p) => {
                 const hasImg = p.images && p.images.length > 0;
                 const lastClickDate = p.lastClickedAt 
                   ? new Date(p.lastClickedAt).toLocaleString('id-ID', { 
-                      timeZone: 'Asia/Jakarta', 
                       day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false 
                     }).replace(/\./g, ':')
                   : "NO ACTIVITY";
 
                 return (
                   <tr key={p.id} className="group hover:bg-white/[0.01] transition-all">
-                    {/* ISI DATA ID */}
                     <td className="p-7 px-6 text-center">
                       <span className="text-xs font-mono font-black text-blue-500/50 group-hover:text-blue-500 transition-colors">#{p.id}</span>
                     </td>
 
                     <td className="p-7 px-10">
-                      <div className="flex flex-col">
-                        <span className="font-black text-white uppercase italic text-sm group-hover:text-blue-500 transition-colors line-clamp-1">{p.title}</span>
-                        <span className="text-[9px] text-gray-600 font-bold mt-1 tracking-widest uppercase italic">RP {p.price.toLocaleString("id-ID")}</span>
+                      <div className="flex items-center gap-4">
+                        {/* THUMBNAIL PREVIEW */}
+                        <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-black shrink-0 border border-white/5">
+                           {hasImg ? (
+                             <img src={p.images[0]} alt="" className="w-full h-full object-cover" />
+                           ) : (
+                             <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-700 font-black italic">N/A</div>
+                           )}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-black text-white uppercase italic text-sm group-hover:text-blue-500 transition-colors line-clamp-1">{p.title}</span>
+                          <span className="text-[9px] text-gray-600 font-bold mt-1 tracking-widest uppercase italic">RP {p.price.toLocaleString("id-ID")}</span>
+                        </div>
                       </div>
                     </td>
 
@@ -136,15 +174,13 @@ export default function ListTableContent() {
                         <div className="bg-blue-600 text-white px-5 py-1.5 rounded-full shadow-[0_5px_15px_rgba(37,99,235,0.4)]">
                           <span className="text-[10px] font-black italic tracking-tighter">{p.clicks || 0} CLICKS</span>
                         </div>
-                        <div className="flex flex-col items-center">
-                          <span className="text-[6px] font-black text-gray-600 uppercase tracking-[0.2em]">Last Clicked</span>
-                          <span className="text-[8px] font-black text-blue-400 uppercase italic mt-0.5">{lastClickDate}</span>
-                        </div>
+                        <span className="text-[8px] font-black text-blue-400 uppercase italic mt-0.5">{lastClickDate}</span>
                       </div>
                     </td>
 
                     <td className="p-7 text-right px-10">
-                      <div className="flex justify-end gap-2 text-white">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => handleCopyLink(p.id)} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[9px] font-black uppercase italic text-gray-400 hover:text-white transition-all border border-white/5">Link</button>
                         <Link href={`/admin/edit/${p.id}`} className="px-4 py-2 bg-blue-600/10 hover:bg-blue-600 rounded-xl text-[9px] font-black uppercase italic text-blue-500 hover:text-white transition-all border border-blue-500/20">Edit</Link>
                         <button onClick={() => handleDelete(p.id, p.title, p.images)} className="px-4 py-2 bg-red-600/5 hover:bg-red-600 rounded-xl text-[9px] font-black uppercase italic text-red-500 hover:text-white transition-all border border-red-900/10">Hapus</button>
                       </div>
