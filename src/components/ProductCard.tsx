@@ -140,7 +140,7 @@ export default function ProductCard({ product, autoOpen }: { product: any, autoO
                     GAS BELI SEKARANG 🛒
                   </a>
                   <button onClick={closeModal} className="bg-transparent text-gray-400 hover:text-white border border-white/10 py-4 rounded-xl font-bold uppercase transition-all">
-                    TUTUP DETAIL
+                    Racun Lainnya
                   </button>
                 </div>
               </div>

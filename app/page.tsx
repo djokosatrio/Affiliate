@@ -40,7 +40,8 @@ async function ProductList({ searchParams }: { searchParams: Promise<SearchParam
   const currentPage = Number(params?.page) || 1;
   const pageSize = 12;
 
-  const products = await prisma.product.findMany({
+  // 1. Ambil Produk Utama (Sesuai Urutan Terbaru)
+  let products = await prisma.product.findMany({
     where: query ? {
       OR: [
         { title: { contains: query, mode: "insensitive" } },
@@ -51,6 +52,18 @@ async function ProductList({ searchParams }: { searchParams: Promise<SearchParam
     orderBy: { createdAt: 'desc' },
     take: pageSize * currentPage,
   });
+
+  // 2. LOGIKA FIX: Jika ada autoId (dari Link Google/Sitemap) tapi produknya belum masuk di 12 besar
+  if (autoId && !products.find(p => String(p.id) === autoId)) {
+    const targetProduct = await prisma.product.findUnique({
+      where: { id: Number(autoId) }
+    });
+    
+    // Jika produk ditemukan, selipkan di urutan pertama agar kartu produk muncul & pop-up bisa terbuka
+    if (targetProduct) {
+      products = [targetProduct, ...products];
+    }
+  }
 
   const totalInDb = await prisma.product.count({
     where: query ? {
@@ -65,7 +78,7 @@ async function ProductList({ searchParams }: { searchParams: Promise<SearchParam
 
   return (
     <>
-      {/* Label & Status (Hanya Judul Katalog & Deskripsi Kecil) */}
+      {/* Label & Status */}
       <div className="mb-8 md:mb-12 flex items-end justify-between border-b border-white/5 pb-8">
         <div className="flex items-center gap-4">
           <div className="h-8 md:h-12 w-2 bg-blue-600 rounded-full shadow-[0_0_20px_rgba(37,99,235,0.5)]"></div>
@@ -85,16 +98,16 @@ async function ProductList({ searchParams }: { searchParams: Promise<SearchParam
         </div>
       </div>
 
-    {/* Grid Kartu Produk */}
-<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-6 items-start">
-  {products.map((p) => (
-    <ProductCard 
-      key={p.id} 
-      product={p} 
-      autoOpen={autoId === String(p.id)} 
-    />
-  ))}
-</div>
+      {/* Grid Kartu Produk (6 Kolom Desktop) */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-6 items-start">
+        {products.map((p) => (
+          <ProductCard 
+            key={p.id} 
+            product={p} 
+            autoOpen={autoId === String(p.id)} 
+          />
+        ))}
+      </div>
 
       {/* Tombol Load More */}
       {hasMore && (
