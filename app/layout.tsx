@@ -10,33 +10,29 @@ import { prisma } from "@/src/lib/prisma";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-// --- KONFIGURASI SEO & VERIFIKASI GOOGLE ---
 export const metadata: Metadata = {
   title: "Kere Hore Review | Rekomendasi Produk Viral Pilihan Netizen",
-  description: "Review jujur produk harga miring kualitas hore. Temukan barang viral TikTok dan Shopee di sini!",
-  // VERIFIKASI GOOGLE SEARCH CONSOLE
+  description: "Cari barang viral harga kere tapi kualitas hore? Kere Hore Review tempatnya! Temukan review jujur produk TikTok dan Shopee harga miring di sini.",
   verification: {
     google: "a5y1t_UsKZXf2HgmHdB5_mQEF6ttbDAyOvBeAur6Uug", 
   },
-  // OpenGraph agar saat link di share ke WA/FB muncul gambar bagus
   openGraph: {
-    title: "Kere Hore Review",
-    description: "Kere Tapi Hore! Gudang Review Barang Viral.",
-    images: ['/logo.png'],
+    title: "Kere Hore Review - Kere Tapi Hore!",
+    description: "Gudang Review Barang Viral Harga Miring Kualitas Mewah.",
+    url: "https://www.kerehore.online",
+    siteName: "Kere Hore Review",
+    images: [{ url: "/logo.png" }],
+    locale: "id_ID",
+    type: "website",
   },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // 1. Ambil Kategori untuk Filter (Database)
-  const categoriesRaw = await prisma.product.findMany({
-    select: { category: true },
-    distinct: ["category"],
-  });
-  const categories = ["All", ...categoriesRaw.map((c) => c.category)];
-
-  // 2. Ambil Produk Pilihan untuk Iklan (Ganti ID 12 dengan ID produk pilihanmu)
-  const featuredProduct = await prisma.product.findUnique({
-    where: { id: 12 }, 
+  
+  // Ambil Produk Terbaru secara otomatis untuk iklan melayang
+  // Ini jauh lebih aman daripada hardcode ID 12 yang mungkin sudah kamu hapus
+  const featuredProduct = await prisma.product.findFirst({
+    orderBy: { createdAt: 'desc' }
   });
 
   return (
@@ -58,15 +54,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   KERE HORE
                 </h1>
                 <p className="text-[7px] md:text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase italic ml-1 hidden md:block">
-                  Review Official
+                  Review Official • Kere Tapi Hore!
                 </p>
               </div>
             </div>
 
-            {/* FILTER SECTION */}
+            {/* FILTER SECTION (Hanya Search) */}
             <div className="w-full md:flex-1 flex justify-center max-w-4xl min-w-0">
+              {/* FilterSection sekarang tidak butuh props categories */}
               <Suspense fallback={<div className="w-full h-10 bg-white/5 animate-pulse rounded-xl" />}>
-                <FilterSection categories={categories} />
+                <FilterSection />
               </Suspense>
             </div>
 
