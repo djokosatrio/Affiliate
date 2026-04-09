@@ -1,137 +1,152 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 
-export default function ProductCard({ product }: { product: any }) {
+export default function ProductCard({ product, autoOpen }: { product: any, autoOpen?: boolean }) {
+  // State untuk gambar yang sedang aktif dilihat
   const [activeImage, setActiveImage] = useState(product.images[0]);
   const [showModal, setShowModal] = useState(false);
-  const [zoomIndex, setZoomIndex] = useState(0);
 
-  // --- FUNGSI TRACKING KLIK ---
-  const handleAffiliateClick = async (e: React.MouseEvent) => {
-    // Kita tidak pakai preventDefault supaya window.open tetap lancar
-    // Jalankan fetch di background tanpa mengganggu user
-    fetch(`/api/clicks/${product.id}`, { 
-      method: "POST",
-      // Keepalive memastikan request tetap jalan meskipun tab ditutup/pindah
-      keepalive: true 
-    }).catch(err => console.error("Tracking Error:", err));
-  };
+  // Update activeImage jika product berubah
+  useEffect(() => {
+    setActiveImage(product.images[0]);
+  }, [product]);
 
-  const openZoom = (img: string) => {
-    const index = product.images.indexOf(img);
-    setZoomIndex(index !== -1 ? index : 0);
-    setShowModal(true);
-    document.body.style.overflow = 'hidden';
-  };
+  useEffect(() => {
+    if (autoOpen) {
+      setShowModal(true);
+      document.body.style.overflow = 'hidden';
+    }
+  }, [autoOpen]);
 
-  const closeZoom = () => {
+  const closeModal = () => {
     setShowModal(false);
     document.body.style.overflow = 'unset';
+    if (autoOpen) {
+      window.history.pushState(null, "", "/");
+    }
   };
 
-  const nextZoom = (e: React.MouseEvent) => {
-    e.stopPropagation(); 
-    setZoomIndex((prev) => (prev + 1) % product.images.length);
-  };
-
-  const prevZoom = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setZoomIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
+  const handleAffiliateClick = () => {
+    fetch(`/api/clicks/${product.id}`, { method: "POST", keepalive: true })
+      .catch(err => console.error("Tracking Error:", err));
   };
 
   return (
     <>
-      <div className="group flex flex-col h-full bg-[#121418] border border-gray-800/40 rounded-[2.5rem] overflow-hidden hover:border-blue-500/30 transition-all duration-500 shadow-xl">
-        
-        {/* === 1. GAMBAR UTAMA === */}
-        <div className="relative h-64 w-full overflow-hidden bg-gray-900 cursor-zoom-in">
+      {/* === KARTU GRID === */}
+      <div 
+        className="group flex flex-col h-full bg-[#121418] border border-gray-800/40 rounded-[1.2rem] md:rounded-[2rem] overflow-hidden hover:border-blue-500/30 transition-all duration-500 shadow-xl cursor-pointer" 
+        onClick={() => { setShowModal(true); document.body.style.overflow = 'hidden'; }}
+      >
+        <div className="relative aspect-square w-full overflow-hidden bg-gray-900">
           <Image
-            src={activeImage || "/placeholder.png"}
+            src={product.images[0] || "/placeholder.png"}
             alt={product.title}
             fill
-            className="object-cover transition-transform duration-700 hover:scale-105"
-            onClick={() => openZoom(activeImage)} 
+            className="object-cover object-center transition-transform duration-700 md:hover:scale-110"
             unoptimized
           />
-          <div onClick={() => openZoom(activeImage)} className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <span className="bg-black/60 px-4 py-2 rounded-full text-white text-[10px] font-bold border border-white/10 backdrop-blur-sm uppercase tracking-widest">🔍 Zoom Review</span>
-          </div>
         </div>
 
-        {/* === 2. THUMBNAILS === */}
-        <div className="flex gap-2 p-4 overflow-x-auto no-scrollbar bg-[#0d0f12]">
-          {product.images.map((img: string, idx: number) => (
-            <button
-              key={idx}
-              onClick={() => setActiveImage(img)}
-              className={`relative h-10 w-10 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
-                activeImage === img ? "border-blue-500 scale-105" : "border-gray-800 opacity-40 hover:opacity-100"
-              }`}
-            >
-              <Image src={img} alt="thumb" fill className="object-cover" unoptimized />
-            </button>
-          ))}
-        </div>
-        
-        {/* === 3. INFO PRODUK === */}
-        <div className="p-6 pt-2 flex flex-col flex-grow">
-          
-          <div className="mb-3">
-            <span className="bg-blue-600/10 text-blue-400 text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border border-blue-600/20">
-              {product.category || "Review"}
+        <div className="p-3 md:p-5 flex flex-col flex-grow">
+          <div className="mb-2 flex">
+            <span className="bg-blue-600 text-white text-[7px] md:text-[9px] font-black uppercase px-2 py-0.5 rounded-sm">
+              {product.category || "REVIEW"}
             </span>
           </div>
 
-          <Link href={`/product/${product.id}`}>
-            <h3 className="text-lg font-bold text-white hover:text-blue-400 transition-colors uppercase tracking-tight leading-tight min-h-[3rem]">
-              {product.title}
-            </h3>
-          </Link>
-          
-          <div className="text-gray-400 text-sm mt-4 leading-relaxed whitespace-pre-line min-h-[5rem]">
-            {product.description}
-          </div>
+          <h3 className="text-[10px] md:text-sm font-extrabold text-white uppercase leading-tight line-clamp-2 mb-2 min-h-[2.5em]">
+            {product.title}
+          </h3>
 
-          {/* === 4. HARGA & TOMBOL === */}
-          <div className="mt-auto pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Harga </span>
-                <p className="text-2xl font-black text-blue-400">
-                  Rp {product.price.toLocaleString("id-ID")}
-                </p>
-              </div>
+          {product.description && (
+            <p className="text-[8px] md:text-[11px] text-gray-500 line-clamp-2 leading-relaxed mb-4 italic">
+              {product.description}
+            </p>
+          )}
+
+          <div className="mt-auto pt-3 border-t border-white/5">
+            <p className="text-[12px] md:text-lg font-black text-blue-400">
+              Rp {product.price.toLocaleString("id-ID")}
+            </p>
+            <div className="mt-2 text-[7px] md:text-[9px] text-blue-500 font-bold uppercase tracking-widest group-hover:text-white transition-colors">
+              Klik Detail ➔
             </div>
-            
-            {/* LINK DENGAN FUNGSI TRACKING ONCLICK */}
-            <a 
-              href={product.affiliateUrl} 
-              target="_blank" 
-              onClick={handleAffiliateClick} // <-- Panggil fungsi tracking di sini
-              className="block w-full text-center bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-blue-600/20 active:scale-95"
-            >
-              GAS BELI SEKARANG 🛒
-            </a>
           </div>
         </div>
       </div>
 
-      {/* === 5. MODAL ZOOM === */}
+      {/* === MODAL POP-UP (DETAIL DENGAN MULTI-GAMBAR) === */}
       {showModal && (
-        <div className="fixed inset-0 z-[999] bg-black/95 backdrop-blur-md flex items-center justify-center" onClick={closeZoom}>
-          <button className="absolute top-8 right-8 text-white/50 hover:text-white text-5xl font-light">×</button>
-          {product.images.length > 1 && (
-            <button onClick={prevZoom} className="absolute left-4 md:left-10 bg-white/5 hover:bg-white/10 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl border border-white/10">‹</button>
-          )}
-          <div className="relative w-full max-w-5xl h-[80vh]" onClick={(e) => e.stopPropagation()}>
-            <Image src={product.images[zoomIndex]} alt="Zoom" fill className="object-contain animate-in zoom-in duration-300" unoptimized />
+        <div className="fixed inset-0 z-[999] bg-black/95 flex items-center justify-center p-2 md:p-10" onClick={closeModal}>
+          <div className="relative w-full max-w-6xl max-h-[95vh] md:max-h-[90vh] bg-[#101216] border border-white/10 rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row animate-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
+            
+            <button onClick={closeModal} className="absolute top-4 right-5 text-white/50 hover:text-white text-3xl md:text-4xl z-50 p-2">&times;</button>
+            
+            {/* AREA GAMBAR (KIRI) */}
+            <div className="flex-1 w-full md:w-1/2 flex flex-col bg-black/20 border-b md:border-b-0 md:border-r border-white/5">
+              {/* Gambar Utama */}
+              <div className="relative flex-grow h-64 md:h-[450px] w-full flex items-center justify-center p-4">
+                <Image 
+                  src={activeImage} 
+                  alt={product.title} 
+                  fill 
+                  className="object-contain p-4 md:p-10" 
+                  unoptimized 
+                />
+              </div>
+
+              {/* LIST GAMBAR (THUMBNAILS) - Muncul jika gambar > 1 */}
+              {product.images.length > 1 && (
+                <div className="flex gap-3 p-4 bg-black/40 overflow-x-auto no-scrollbar justify-center border-t border-white/5">
+                  {product.images.map((img: string, idx: number) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImage(img)}
+                      className={`relative w-12 h-12 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 transition-all duration-300 flex-shrink-0 ${
+                        activeImage === img ? "border-blue-600 scale-105 shadow-[0_0_15px_rgba(37,99,235,0.4)]" : "border-white/10 opacity-40 hover:opacity-100"
+                      }`}
+                    >
+                      <Image src={img} alt={`Thumb ${idx}`} fill className="object-cover" unoptimized />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* AREA DETAIL (KANAN) */}
+            <div className="flex-1 w-full md:w-1/2 p-6 md:p-10 flex flex-col overflow-y-auto no-scrollbar">
+              <div className="mb-4">
+                <span className="bg-blue-600 text-white text-[9px] md:text-[11px] font-black uppercase px-3 py-1 rounded-sm">
+                  {product.category || "REVIEW"}
+                </span>
+              </div>
+              <h1 className="text-xl md:text-3xl font-black text-white uppercase mb-4 leading-tight">{product.title}</h1>
+              
+              <div className="text-gray-400 text-xs md:text-base mt-2 leading-relaxed whitespace-pre-line border-t border-white/5 pt-5 mb-8">
+                {product.description}
+              </div>
+
+              <div className="mt-auto pt-6 border-t border-white/5 space-y-4">
+                <div>
+                  <p className="text-[10px] text-gray-600 font-bold uppercase mb-1">Harga Terbaik</p>
+                  <p className="text-2xl md:text-4xl font-black text-blue-400">Rp {product.price.toLocaleString("id-ID")}</p>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <a href={product.affiliateUrl} target="_blank" onClick={handleAffiliateClick} className="bg-blue-600 hover:bg-white hover:text-blue-600 text-white text-center py-4 rounded-xl font-black transition-all border-2 border-blue-600 uppercase">
+                    GAS BELI SEKARANG 🛒
+                  </a>
+                  <button onClick={closeModal} className="bg-transparent text-gray-400 hover:text-white border border-white/10 py-4 rounded-xl font-bold uppercase transition-all">
+                    TUTUP DETAIL
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
-          {product.images.length > 1 && (
-            <button onClick={nextZoom} className="absolute right-4 md:right-10 bg-white/5 hover:bg-white/10 text-white w-14 h-14 rounded-full flex items-center justify-center text-2xl border border-white/10">›</button>
-          )}
         </div>
       )}
     </>

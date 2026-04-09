@@ -19,37 +19,34 @@ export default function FilterSection({ categories }: { categories: string[] }) 
   };
 
   return (
-    <div className="flex items-center w-full max-w-4xl bg-[#1a1a1a] border border-white/10 rounded-2xl overflow-hidden shadow-inner group focus-within:border-blue-600 transition-all duration-300">
+    <div className="flex items-center w-full bg-[#1a1a1a] border border-white/10 rounded-xl md:rounded-2xl overflow-hidden shadow-inner group focus-within:border-blue-600 transition-all">
       
-      {/* INPUT PENCARIAN (IKON JADI BIRU SAAT FOKUS) */}
-      <div className="flex-1 flex items-center px-5 border-r border-white/5">
-        <svg className="h-5 w-5 text-gray-500 group-focus-within:text-blue-500 transition-colors mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="flex-[1.5] min-w-0 flex items-center px-3 md:px-5 border-r border-white/5">
+        <svg className="h-4 w-4 md:h-5 md:w-5 text-gray-500 mr-2 md:mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <input
           type="text"
-          placeholder="Cari review produk..."
+          placeholder="Cari..."
           defaultValue={activeSearch}
-          className="bg-transparent text-white text-base py-4 outline-none w-full placeholder-gray-600"
+          className="bg-transparent text-white text-[10px] md:text-base py-3 md:py-4 outline-none w-full placeholder-gray-600 min-w-0"
           onChange={(e) => updateFilter("q", e.target.value)}
         />
       </div>
 
-      {/* DROPDOWN KATEGORI (TEKS JADI BIRU) */}
-      <div className="px-4 bg-[#222222] hover:bg-[#2a2a2a] transition-colors h-full flex items-center">
+      <div className="flex-1 min-w-0 bg-[#222222] flex items-center">
         <select 
           value={activeCat}
           onChange={(e) => updateFilter("cat", e.target.value)}
-          className="bg-transparent text-blue-400 text-xs font-black uppercase tracking-widest outline-none cursor-pointer py-4 pr-2"
+          className="bg-transparent text-blue-400 text-[9px] md:text-xs font-black uppercase tracking-tight md:tracking-widest outline-none cursor-pointer py-3 md:py-4 w-full text-center"
         >
           {categories.map((c) => (
             <option key={c} value={c} className="bg-[#1a1a1a] text-white">
-              {c === "All" ? "SEMUA KATEGORI" : c.toUpperCase()}
+              {c === "All" ? "SEMUA" : c.toUpperCase()}
             </option>
           ))}
         </select>
       </div>
-
     </div>
   );
 }
